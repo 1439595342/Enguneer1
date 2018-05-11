@@ -1,0 +1,207 @@
+脚本案例：
+   用户输入一个用户名，判断该用户是否存在
+  
+   如果存在，则输出该用户已存在
+   如果不存在，则创建该用户
+
+
+[root@server0 ~]# cat /root/user.sh
+#!/bin/bash
+read -p  '请输入您要测试的用户名：'  user
+
+id $user &> /dev/null
+
+if [ $? -eq 0 ];then
+
+  echo  用户已存在
+
+else
+   echo 用户不存在
+   useradd $user
+   echo $user用户创建成功
+fi
+
+脚本案例：
+   用户输入一个IP，判断本机是否可以与该ip通信
+  
+   如果可以通信，则输出IP地址可以通信
+   如果不可以通信，则IP地址不可以通信
+
+
+[root@server0 ~]# cat /root/ip.sh
+#!/bin/bash
+read -p '请输入您要测试的ip地址：'  a
+ 
+ping  -c 2 $a &> /dev/null
+
+if [ $? -eq 0 ];then
+   echo 可以
+else
+   echo 不可以
+
+fi
+################################################################
+
+• 真机上操作：控制教学用虚拟机
+– 格式:rht-vmctl  控制指令   虚拟机名
+– 常用控制指令: reset(还原)
+
+[root@room9pc01 ~]# rht-vmctl reset classroom
+[root@room9pc01 ~]# rht-vmctl reset server
+[root@room9pc01 ~]# rht-vmctl reset desktop
+
+################################################################
+
+SELinux概述
+• Security-Enhanced Linux
+
+– 美国NSA国家安全局主导开发,一套增强Linux系统安
+全的强制访问控制体系
+– 集成到Linux内核(2.6及以上)中运行
+– RHEL7基于SELinux体系针对用户、进程、目录和文件
+提供了预设的保护策略,以及管理工具
+
+
+• SELinux的运行模式
+– enforcing(强制)、permissive(宽松)
+– disabled(彻底禁用)
+
+    任何状态变成disabled(彻底禁用)，都必须通过重起reboot
+
+• 切换运行模式
+– 临时切换:setenforce 1|0
+– 固定配置:/etc/selinux/config 文件
+
+两台虚拟机均做
+
+[root@server0 ~]# getenforce 
+Enforcing
+[root@server0 ~]# setenforce 0
+[root@server0 ~]# getenforce 
+Permissive
+
+[root@server0 ~]# vim /etc/selinux/config    #下一次开机后生效 
+SELINUX=permissive
+
+
+###############################################################
+
+用户初始化文件
+
+• 影响指定用户的 bash 解释环境
+– ~/.bashrc,每次开启 bash 终端时生效
+
+
+• 影响所有用户的 bash 解释环境
+– /etc/bashrc,每次开启 bash 终端时生效
+
+[root@server0 ~]# vim /root/.bashrc
+alias hello='echo hello'
+
+[root@server0 ~]# vim /home/student/.bashrc
+alias hi='echo hi'
+
+[root@server0 ~]# vim /etc/bashrc 
+alias haha='echo haha'
+
+
+	root可以执行： 
+	hello  haha
+
+	student可以执行： 
+	hi  haha
+
+############################################################
+
+配置聚合连接(网卡绑定、链路聚合)
+
+  作用：网卡设备的冗余
+
+  热备份(activebackup)连接冗余
+
+
+1.创建虚拟网卡team0  (参考 man  teamd.conf)  /example  全文搜索
+
+# nmcli connection add type team      
+con-name team0 ifname team0 autoconnect yes         
+config '{"runner": {"name": "activebackup"}}'
+                
+# nmcli connection 添加  类型为 team
+  配置文件名字  team0  ifconfig显示的名字为 team0   每次开机自动启用
+  配置    热备份方式
+
+2.添加成员
+# nmcli connection add type team-slave con-name team0-1 ifname eth1 master team0
+
+# nmcli connection add type team-slave con-name team0-2 ifname eth2 master team0
+
+# nmcli connection 添加  类型为  team的奴隶设备   配置文件名为  team0-1 奴隶的网卡名为 eth1  加入的组织为 team0
+
+3.配置IP地址
+[root@server0 ~]# nmcli connection modify team0 ipv4.method manual ipv4.addresses 192.168.1.1/24 connection.autoconnect yes
+
+4.激活
+
+# nmcli connection up team0
+# nmcli connection up team0-1
+# nmcli connection up team0-2
+
+5.验证查看
+# teamdctl team0 state
+
+# ifconfig eth1 down
+
+# teamdctl team0 state
+
+如果配置错误，可以从头来，删掉从新做
+
+# nmcli connection delete team0
+# nmcli connection delete team0-1
+# nmcli connection delete team0-2  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
